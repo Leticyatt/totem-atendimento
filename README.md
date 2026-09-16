@@ -12,11 +12,11 @@ Este projeto implementa o backend desse totem (entrada de veículo, saída com
 cálculo de valor, consulta de ticket, contagem de vagas, painel de veículos no
 pátio) e nele os **três pilares de segurança** pedidos: prevenção de SQL
 Injection, gestão de erros do lado do servidor e rate limiting. A interface
-web (`public/index.html`) foi desenhada com uma paleta clean — fundo claro,
+web (`assets/index.html`) foi desenhada com uma paleta clean — fundo claro,
 azul como cor de marca — inspirada em totens reais de autopagamento de
 estacionamento (ex.: linha de totens da CloudPark).
 
-## Vagas e tarifas (configuráveis em `src/db.js`)
+## Vagas e tarifas (configuráveis em `config/config.js`)
 
 | Item | Valor padrão |
 |---|---|
@@ -34,10 +34,8 @@ mesmo que a outra área ainda tenha espaço sobrando.
 A cobrança é **fixa por tipo de veículo**, sem cálculo por hora, tolerância ou
 teto de diária: carro paga um valor fechado e moto paga um valor fechado mais
 barato (reflexo da área exclusiva). Para mudar qualquer um desses valores,
-edite os `INSERT OR IGNORE` no topo de `src/db.js` (chaves
-`vagas_totais_carro`, `vagas_totais_moto`, `valor_carro`, `valor_moto`) — e
-apague o arquivo `estacionamento.db` para os novos valores entrarem (ele só é
-criado uma vez).
+edite o objeto `patio` em `config/config.js` — e apague o arquivo
+`estacionamento.db` para os novos valores entrarem (ele só é criado uma vez).
 
 ## Como rodar
 
@@ -47,20 +45,24 @@ npm start
 # abre http://localhost:3000
 ```
 
-O totem web fica em `public/index.html` (abas de Entrada / Saída). A API fica
-em `/api/*`.
+O totem web fica em `assets/index.html` (abas de Entrada / Saída). A API fica
+em `/api/*`. Para rodar os testes automatizados: `npm test`.
 
 ## Estrutura
 
 ```
-server.js                       -> monta tudo (rotas + os 3 pilares)
+config/config.js                -> configurações centralizadas (tarifas, vagas, rate limit, porta)
+src/app.js                      -> monta a aplicação (rotas + os 3 pilares), exportada p/ testes
+src/server.js                   -> ponto de entrada, só sobe o servidor HTTP
 src/db.js                       -> banco (SQLite) e PREPARED STATEMENTS
 src/errors.js                   -> tipos de erro (validação, banco, etc.)
 src/logger.js                   -> log técnico detalhado em logs/erros.log
 src/middleware/errorHandler.js  -> Pilar 2
 src/middleware/rateLimiter.js   -> Pilar 3
 src/routes/estacionamento.js    -> rotas: /entrada /saida /ticket/:codigo /vagas /tarifas /painel
-public/index.html               -> interface do totem (design clean, estilo totem real)
+assets/index.html                -> interface do totem (design clean, estilo totem real)
+tests/pilares.test.js            -> testes automatizados dos 3 pilares
+docs/pilares.md                  -> documentação técnica dos pilares e arquitetura
 ```
 
 ---
@@ -76,7 +78,7 @@ não devia, como ler ou apagar dados.
 comando dos dados:
 
 ```js
-// src/db.js
+// src/db.js (dentro de encapsular(...))
 buscarDentroPorPlaca: db.prepare(
   `SELECT * FROM veiculos WHERE placa = ? AND status = 'dentro'`
 ),
