@@ -29,6 +29,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const { ErroDeBancoDeDados } = require('./errors');
+const config = require('../config/config');
 
 const dbPath = path.join(__dirname, '..', 'estacionamento.db');
 const db = new Database(dbPath);
@@ -57,20 +58,20 @@ db.exec(`
 // Vagas separadas por tipo: a area de moto e menor e fica isolada da area
 // de carro (como em patios reais com vaga exclusiva pra moto).
 db.prepare(
-  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('vagas_totais_carro', '50')`
-).run();
+  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('vagas_totais_carro', ?)`
+).run(String(config.patio.vagasTotaisCarro));
 db.prepare(
-  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('vagas_totais_moto', '10')`
-).run();
+  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('vagas_totais_moto', ?)`
+).run(String(config.patio.vagasTotaisMoto));
 // Tarifa FIXA por tipo de veiculo (sem cobranca progressiva por hora):
 // carro paga um valor fechado, moto paga um valor fechado e mais barato -
 // e o que o patio real faz quando tem uma area exclusiva pra moto.
 db.prepare(
-  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('valor_carro', '13.00')`
-).run();
+  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('valor_carro', ?)`
+).run(String(config.patio.valorCarro.toFixed(2)));
 db.prepare(
-  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('valor_moto', '10.00')`
-).run();
+  `INSERT OR IGNORE INTO configuracao (chave, valor) VALUES ('valor_moto', ?)`
+).run(String(config.patio.valorMoto.toFixed(2)));
 
 const TIPOS_VALIDOS = ['carro', 'moto'];
 

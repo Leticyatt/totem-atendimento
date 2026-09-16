@@ -2,11 +2,12 @@
   "name": "totem-atendimento",
   "version": "1.0.0",
   "description": "Totem de senhas para atendimento ao consumidor - projeto de Seguranca de Sistemas da Informacao",
-  "main": "server.js",
+  "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "node --test tests/"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
