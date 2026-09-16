@@ -31,7 +31,9 @@ const path = require('path');
 const { ErroDeBancoDeDados } = require('./errors');
 const config = require('../config/config');
 
-const dbPath = path.join(__dirname, '..', 'estacionamento.db');
+// Permite apontar para um banco isolado nos testes automatizados
+// (ver tests/pilares.test.js), sem mexer no banco real de desenvolvimento.
+const dbPath = process.env.TOTEM_DB_PATH || path.join(__dirname, '..', 'estacionamento.db');
 const db = new Database(dbPath);
 
 db.pragma('journal_mode = WAL');
