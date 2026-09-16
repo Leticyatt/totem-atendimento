@@ -62,7 +62,7 @@ No terminal:
 git log --oneline
 ```
 
-**Mostre a lista de 5 commits** e narre a evolução:
+**Mostre a lista de commits** e narre a evolução:
 
 | Commit | O que fala |
 |---|---|
@@ -71,6 +71,8 @@ git log --oneline
 | `refactor: criar config/config.js e separar app.js de server.js` | "Aqui tirei os valores fixos do código e centralizei em `config/`, e separei a aplicação do que sobe o servidor — isso é o que abriu espaço pra testar." |
 | `test: adicionar testes automatizados + docs/pilares.md` | "Nessa etapa escrevi os testes e documentei os pilares." |
 | `docs: atualizar README` | "Por último, atualizei a documentação geral do projeto." |
+| `docs: adicionar roteiro da apresentação` | "Documentei também o roteiro que estou seguindo agora." |
+| `fix: restringir rate limiting às rotas de escrita` | "E aqui corrigi um detalhe de design: o rate limit estava valendo pra qualquer rota de `/api`, inclusive consultas automáticas de vagas — o que bloqueava o usuário sem ele ter feito nada de errado. Agora só se aplica em `/entrada` e `/saida`." |
 
 **Fale:**
 > "Cada etapa da reorganização ficou registrada em um commit separado, então dá pra acompanhar a evolução do projeto do estado inicial até a estrutura final."
@@ -143,15 +145,15 @@ Isso tem o stack trace inteiro, IP e corpo da requisição — informação que 
 
 ### ✅ Pilar 3 — Rate Limiting
 
-**Onde no código:** `src/middleware/rateLimiter.js` (janela deslizante por IP) + `config/config.js` (limite: 10 requisições / 60s, bloqueio de 60s).
+**Onde no código:** `src/middleware/rateLimiter.js` (janela deslizante por IP) + `config/config.js` (limite: 10 requisições / 60s, bloqueio de 60s). Aplicado em `src/routes/estacionamento.js`, **só nas rotas de escrita** (`/entrada` e `/saida`) — decisão de design: consultar vagas/tarifas (rotas de leitura, chamadas sozinhas pelo front a cada 15s) não representa abuso e por isso fica de fora do limite.
 
 **Demonstração ao vivo:**
 ```bash
-for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/api/status; done
+for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3000/api/entrada -H "Content-Type: application/json" -d '{"tipo":"carro"}'; done
 ```
-Resultado esperado: dez `200` seguidos e depois `429` nas últimas.
+Resultado esperado: dez `201` seguidos e depois `429` nas últimas duas.
 
-**Fale:** "Isso simula alguém apertando o botão sem parar. Depois da décima requisição no mesmo minuto, o IP fica bloqueado por 60 segundos."
+**Fale:** "Isso simula alguém apertando o botão de 'registrar entrada' sem parar. Depois da décima requisição no mesmo minuto, o IP fica bloqueado por 60 segundos — mas só nas ações de escrita; se eu ficar só olhando o painel de vagas, isso nunca me bloqueia, porque não é esse o comportamento que queremos conter."
 
 ---
 

@@ -5,7 +5,12 @@
  *  - usa os prepared statements de db.js, ja encapsulados contra falha
  *    de infraestrutura (Pilar 1 + parte de infraestrutura do Pilar 2)
  *  - lanca erros tipados que o errorHandler traduz com seguranca (Pilar 2)
- *  - fica atras do rate limiter aplicado em server.js (Pilar 3)
+ *  - fica atras do rate limiter (Pilar 3), aplicado so nas rotas de
+ *    ESCRITA (/entrada e /saida) - e ali que faz sentido conter alguem
+ *    "apertando" a mesma acao repetidas vezes. As rotas de leitura
+ *    (/vagas, /tarifas, /painel) ficam de fora, pois sao consultadas
+ *    automaticamente pelo front (painel de vagas, tabela de tarifas)
+ *    e nao representam abuso.
  *
  * OBS: as chamadas a stmts.*.get/.run/.all ja lancam ErroDeBancoDeDados
  * automaticamente se o SQLite falhar (arquivo corrompido, disco cheio,
@@ -23,8 +28,14 @@ const {
 } = require('../db');
 const { ErroDeValidacao } = require('../errors');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { criarRateLimiter } = require('../middleware/rateLimiter');
+const config = require('../../config/config');
 
 const router = express.Router();
+
+// PILAR 3: limitador aplicado apenas nas rotas de escrita (entrada/saida),
+// que sao as sensiveis a "aperta 500 milhoes de vezes" do enunciado.
+const limitadorEscrita = criarRateLimiter(config.rateLimiter);
 
 // Regex simples de validacao de placa (padrao antigo ABC1234 ou Mercosul ABC1D23).
 const REGEX_PLACA = /^[A-Za-z]{3}[0-9][A-Za-z0-9][0-9]{2}$/;
@@ -35,7 +46,7 @@ function normalizarPlaca(placa) {
 }
 
 // POST /api/entrada -> veiculo chega, totem imprime ticket
-router.post('/entrada', asyncHandler(async (req, res) => {
+router.post('/entrada', limitadorEscrita, asyncHandler(async (req, res) => {
   const { placa, tipo } = req.body || {};
   const tipoFinal = tipo || 'carro';
 
@@ -66,7 +77,7 @@ router.post('/entrada', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/saida -> calcula valor a pagar e libera a vaga
-router.post('/saida', asyncHandler(async (req, res) => {
+router.post('/saida', limitadorEscrita, asyncHandler(async (req, res) => {
   const { ticket, placa } = req.body || {};
 
   if (!ticket && !placa) {

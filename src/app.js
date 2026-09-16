@@ -14,8 +14,6 @@
 
 const express = require('express');
 const path = require('path');
-const config = require('../config/config');
-const { criarRateLimiter } = require('./middleware/rateLimiter');
 const { errorHandler, rotaNaoEncontrada } = require('./middleware/errorHandler');
 const rotasEstacionamento = require('./routes/estacionamento');
 
@@ -26,12 +24,10 @@ function criarApp() {
   app.use(express.json());
   app.use(express.static(path.join(__dirname, '..', 'assets')));
 
-  // PILAR 3: aplicado só nas rotas da API, que é onde o "aperta 500 milhões
-  // de vezes" do enunciado acontece (ex.: carro tentando registrar entrada
-  // repetidas vezes, ou alguém tentando "advinhar" tickets no /saida).
-  const limitadorApi = criarRateLimiter(config.rateLimiter);
-
-  app.use('/api', limitadorApi, rotasEstacionamento);
+  // PILAR 3: o rate limiter agora é aplicado dentro de
+  // ./routes/estacionamento.js, apenas nas rotas de escrita
+  // (/entrada e /saida) — ver comentário lá para o motivo.
+  app.use('/api', rotasEstacionamento);
 
   app.get('/api/status', (req, res) => {
     res.json({ sucesso: true, status: 'online', hora: new Date().toISOString() });

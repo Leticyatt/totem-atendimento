@@ -109,19 +109,35 @@ test('PILAR 2 - Gestão de erros: rota inexistente retorna 404 com mensagem gen�
   assert.ok(!textoResposta.includes('at ') && !textoResposta.includes('.js:'));
 });
 
-test('PILAR 3 - Rate limiting: bloqueia após exceder o limite de requisições', async (t) => {
+test('PILAR 3 - Rate limiting: bloqueia após exceder o limite de requisições na rota de escrita', async (t) => {
   const servidor = await subirServidorDeTeste();
   t.after(() => servidor.close());
 
   const respostas = [];
-  // O limite padrão é 10 por janela; disparamos mais que isso.
+  // O limite padrão é 10 por janela; disparamos mais que isso contra uma
+  // rota de ESCRITA (/entrada), que é onde o limitador é aplicado agora
+  // (rotas de leitura como /vagas e /tarifas ficam de fora de propósito).
   for (let i = 0; i < 12; i++) {
     // eslint-disable-next-line no-await-in-loop
-    respostas.push(await requisitar(servidor, 'GET', '/api/status'.replace('status', 'status')));
+    respostas.push(await requisitar(servidor, 'POST', '/api/entrada', { tipo: 'carro' }));
   }
 
   const bloqueadas = respostas.filter((r) => r.status === 429);
   assert.ok(bloqueadas.length > 0, 'esperava pelo menos uma resposta 429 (Too Many Requests)');
+});
+
+test('PILAR 3 - Rate limiting: rotas de leitura (/vagas) não são bloqueadas', async (t) => {
+  const servidor = await subirServidorDeTeste();
+  t.after(() => servidor.close());
+
+  const respostas = [];
+  for (let i = 0; i < 15; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    respostas.push(await requisitar(servidor, 'GET', '/api/vagas'));
+  }
+
+  const bloqueadas = respostas.filter((r) => r.status === 429);
+  assert.equal(bloqueadas.length, 0, 'consultas de leitura não deveriam ser limitadas');
 });
 
 test.after(() => limparBancoDeTeste());

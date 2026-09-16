@@ -148,7 +148,11 @@ deslizante por IP guardada em memória:
 - Se passar de **10 requisições em 60 segundos**, o IP é bloqueado por mais
   **60 segundos** — resposta `429 Too Many Requests` com o cabeçalho
   `Retry-After` avisando quanto tempo falta.
-- Aplicado em todas as rotas de `/api`, que é onde o volume alto acontece.
+- Aplicado apenas nas rotas de **escrita** (`/entrada` e `/saida`), que são
+  as sensíveis a abuso. As rotas de leitura (`/vagas`, `/tarifas`, `/painel`,
+  `/status`, `/health`) ficam de fora de propósito, já que são consultadas
+  automaticamente pelo front (painel de vagas, tabela de tarifas) e não
+  representam risco de força bruta.
 
 Testamos com 12 requisições seguidas: as 10 primeiras passam normalmente
 (`201`), a partir da 11ª o totem responde `429` com a mensagem "Muitas
