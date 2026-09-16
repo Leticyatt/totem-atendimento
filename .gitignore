@@ -1,0 +1,13 @@
+# Dependências (o Render reinstala sozinho via npm install)
+node_modules/
+
+# Banco de dados local (sera recriado do zero no servidor)
+estacionamento.db
+estacionamento.db-shm
+estacionamento.db-wal
+
+# Logs locais
+logs/
+
+# Variaveis de ambiente sensíveis, se existir
+.env
